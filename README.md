@@ -25,7 +25,7 @@ Register the package service by adding it to the providers array.
 Publish the package's configuration file to the application's own config directory
 
 ```
-php artisan vendor:publish  --tag=ExtraFeaturesConfig
+php artisan vendor:publish  --tag=ExtraFeaturesonfig
 ```
 
 The above line will create a file called `extrafeatures.php` under config folder. 
@@ -39,3 +39,5 @@ The above line will create a file called `extrafeatures.php` under config folder
 ### Redirect No Page Found
 
 When user tries to load an unknown url, it's redirected to a specific known url.
+
+* Go to `config/extrafeatures.php` file and update the value for the key `REDIRECT_NO_PAGE_FOUND`.
