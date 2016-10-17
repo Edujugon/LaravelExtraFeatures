@@ -13,6 +13,8 @@ composer require edujugon/laravelextrafeatures
 
 Register the package service by adding it to the providers array.
 
+> IMPORTANT! Ensure you put that line at the end of the providers list.
+
 ```
 'providers' => array(
     ...

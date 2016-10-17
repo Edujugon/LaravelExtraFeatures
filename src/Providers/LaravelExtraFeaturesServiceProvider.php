@@ -1,6 +1,6 @@
 <?php
 
-namespace Edujugon\AdminLTE\Providers;
+namespace Edujugon\LaravelExtraFeatures\Providers;
 
 use Illuminate\Support\ServiceProvider;
 
