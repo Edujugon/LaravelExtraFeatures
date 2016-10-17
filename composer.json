@@ -1,0 +1,21 @@
+{
+  "name": "edujugon/laravel-extra-features",
+  "description": "This package provides useful features to give extra functionality to your Laravel project",
+  "keywords": ["Laravel","features","core","extra features","extra functionality"],
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Eduardo Marcos",
+      "email": "edujugon@gmail.com"
+    }
+  ],
+  "require": {
+    "illuminate/support": "^5.2"
+  },
+  "autoload": {
+    "psr-4": {
+      "Edujugon\\LaravelExtraFeatures\\": "src/"
+    }
+  },
+  "minimum-stability": "dev"
+}

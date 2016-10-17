@@ -1,0 +1,5 @@
+vendor/
+composer.lock
+.idea
+src/Config/iosCertificates/
+.DS_Store
