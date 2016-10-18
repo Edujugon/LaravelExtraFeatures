@@ -6,7 +6,7 @@ This package provides useful features to give extra functionality to your Larave
 
 type in console:
 ```
-composer require edujugon/laravelextrafeatures
+composer require edujugon/laravel-extra-features
 ```
 
 ## Laravel 5.*
