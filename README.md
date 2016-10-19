@@ -25,7 +25,7 @@ Register the package service by adding it to the providers array.
 Publish the package's configuration file to the application's own config directory
 
 ```
-php artisan vendor:publish  --tag=ExtraFeaturesonfig
+php artisan vendor:publish  --tag=ExtraFeaturesConfig
 ```
 
 The above line will create a file called `extrafeatures.php` under config folder. 
