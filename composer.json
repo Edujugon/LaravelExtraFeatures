@@ -9,8 +9,15 @@
       "email": "edujugon@gmail.com"
     }
   ],
+  "repositories": [
+    {
+      "type": "vcs",
+      "url": "https://github.com/Edujugon/Core"
+    }
+  ],
   "require": {
-    "illuminate/support": "^5.2"
+    "illuminate/support": "^5.2",
+    "edujugon/core": "dev-master"
   },
   "autoload": {
     "psr-4": {
