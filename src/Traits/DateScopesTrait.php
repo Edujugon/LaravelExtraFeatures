@@ -2,12 +2,14 @@
 namespace Edujugon\LaravelExtraFeatures\Traits;
 
 
+use Carbon\Carbon;
+
+
 /**
  * Class DateScopeTrait
  *
  * Provide extra features on year, month and day to retrieve data for Laravel Eloquent.
  *
- * !!REQUIRE CARBON!!
  *
  * @package Edujugon\LaravelExtraFeatures\Traits
  */

@@ -11,7 +11,8 @@
   ],
   "require": {
     "illuminate/support": "^5.2",
-    "edujugon/core": "^1.0"
+    "edujugon/core": "^1.0",
+    "nesbot/carbon": "^1.21"
   },
   "require-dev": {
     "phpunit/phpunit": "^5.6"
