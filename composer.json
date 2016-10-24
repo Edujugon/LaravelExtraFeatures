@@ -11,7 +11,6 @@
   ],
   "require": {
     "illuminate/support": "^5.2",
-    "edujugon/core": "dev-master",
     "nesbot/carbon": "^1.21"
   },
   "require-dev": {
