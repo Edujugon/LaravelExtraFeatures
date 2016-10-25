@@ -26,7 +26,7 @@ trait DateScopesTrait {
      * @param null $year
      * @return mixed
      */
-    public function scopeYear($query,$dateColumn,$year = null)
+    public function scopeYear($query,$dateColumn = null,$year = null)
     {
         if(!isset($dateColumn) && isset($this->dateColumn)) $dateColumn = $this->dateColumn;
 
@@ -46,7 +46,7 @@ trait DateScopesTrait {
      * @param null $year
      * @return mixed
      */
-    public function scopeMonth($query,$dateColumn,$month = null,$year = null)
+    public function scopeMonth($query,$dateColumn = null,$month = null,$year = null)
     {
         if(!isset($dateColumn) && isset($this->dateColumn)) $dateColumn = $this->dateColumn;
 
@@ -71,7 +71,7 @@ trait DateScopesTrait {
      * @param null $year
      * @return mixed
      */
-    public function scopeDay($query,$dateColumn,$day = null, $month = null, $year = null)
+    public function scopeDay($query,$dateColumn = null,$day = null, $month = null, $year = null)
     {
         if(!isset($dateColumn) && isset($this->dateColumn)) $dateColumn = $this->dateColumn;
 

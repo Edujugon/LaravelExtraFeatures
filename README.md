@@ -65,7 +65,7 @@ Provide extra features on year, month and day to retrieve data for Laravel Eloqu
      * @param null $year
      * @return mixed
      */
-    public function scopeYear($query,$dateColumn,$year = null)
+    public function scopeYear($query,$dateColumn = null,$year = null)
 ```
 
 ```php
@@ -80,7 +80,7 @@ Provide extra features on year, month and day to retrieve data for Laravel Eloqu
      * @param null $year
      * @return mixed
      */
-    public function scopeMonth($query,$dateColumn,$month = null,$year = null)
+    public function scopeMonth($query,$dateColumn = null,$month = null,$year = null)
 ```
 
 ```php
@@ -97,5 +97,5 @@ Provide extra features on year, month and day to retrieve data for Laravel Eloqu
      * @param null $year
      * @return mixed
      */
-    public function scopeDay($query,$dateColumn,$day = null, $month = null, $year = null)
+    public function scopeDay($query,$dateColumn = null,$day = null, $month = null, $year = null)
 ```
