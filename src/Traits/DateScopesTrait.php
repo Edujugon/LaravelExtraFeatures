@@ -59,7 +59,7 @@ trait DateScopesTrait {
 
 
     /**
-     * Get Tattoos of passed day.
+     * Get items of passed day.
      * If no day, take current day
      * If no month, take current month
      * If no year, take current year
