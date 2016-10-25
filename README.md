@@ -85,7 +85,7 @@ Provide extra features on year, month and day to retrieve data for Laravel Eloqu
 
 ```php
     /**
-     * Get Tattoos of passed day.
+     * Get items of passed day.
      * If no day, take current day
      * If no month, take current month
      * If no year, take current year
