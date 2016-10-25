@@ -51,7 +51,9 @@ When user tries to load an unknown url, it's redirected to a specific known url.
 
 ### DateScopesTrait
 
-Provide basic methods to Models to retrieve data for a specific year, month or day.
+Provide extra features on year, month and day to retrieve data for Laravel Eloquent.
+
+> Adding $dateColumn as model class's property you don't need to pass the $dateColumn parameter to the methods.
 
 ```php
     /**
