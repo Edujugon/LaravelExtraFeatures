@@ -46,6 +46,8 @@ The above line will create a file called `extrafeatures.php` under config folder
 
 When user tries to load an unknown url, it's redirected to a specific known url.
 
+> !IMPORTANT, This feature won't work for local environment. That's an intended behaviour no to hide any redirect/request error.
+
 * Go to `config/extrafeatures.php` file and update the value for the key `REDIRECT_NO_PAGE_FOUND`.
 
 

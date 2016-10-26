@@ -16,7 +16,7 @@ class LaravelExtraFeaturesServiceProvider extends ServiceProvider
 
         $this->publishConfigFile();
 
-        $this->addRoutes();
+        if(app('env') != 'local') $this->addRoutes();
     }
 
 
