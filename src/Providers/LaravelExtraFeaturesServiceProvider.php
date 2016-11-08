@@ -2,6 +2,7 @@
 
 namespace Edujugon\LaravelExtraFeatures\Providers;
 
+use Carbon\Carbon;
 use Illuminate\Support\ServiceProvider;
 
 class LaravelExtraFeaturesServiceProvider extends ServiceProvider
@@ -17,6 +18,8 @@ class LaravelExtraFeaturesServiceProvider extends ServiceProvider
         $this->publishConfigFile();
 
         if(app('env') != 'local') $this->addRoutes();
+
+        $this->setCarbonDefaultLocale();
     }
 
 
@@ -32,6 +35,16 @@ class LaravelExtraFeaturesServiceProvider extends ServiceProvider
         if (! $this->app->routesAreCached()) {
             require __DIR__.'/../Routes/web.php';
         }
+    }
+
+    /**
+     *Set Carbon locale based on laravel app locale.
+     */
+    private function setCarbonDefaultLocale()
+    {
+        //Set Carbon Localize accordingly to the app Locale.
+        if(function_exists('app'))
+            Carbon::setLocale(app()->getLocale());
     }
 
     /**
