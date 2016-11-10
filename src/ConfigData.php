@@ -13,11 +13,13 @@ class ConfigData
             if(file_exists(config_path('extrafeatures.php')))
             {
                 $config = include(config_path('extrafeatures.php'));
-                return $config[$key];
             }
-        }
+        }else
+            $config =  include(__DIR__ . '/Config/config.php');
 
-        $config =  include(__DIR__ . '/Config/config.php');
-        return $config[$key];
+        if(array_key_exists($key,$config))
+            return $config[$key];
+
+        return null;
     }
 }

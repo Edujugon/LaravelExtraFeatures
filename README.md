@@ -35,6 +35,7 @@ The above line will create a file called `extrafeatures.php` under config folder
 **Functionality**
 
 *   [Redirect when No Page Found](https://github.com/edujugon/LaravelExtraFeatures#redirect-no-page-found)
+*   [Carbon Locale](https://github.com/edujugon/LaravelExtraFeatures#caron-locale)
 
 **Traits**
 
@@ -49,6 +50,10 @@ When user tries to load an unknown url, it's redirected to a specific known url.
 > !IMPORTANT, This feature won't work for local environment. That's an intended behaviour no to hide any redirect/request error.
 
 * Go to `config/extrafeatures.php` file and update the value for the key `REDIRECT_NO_PAGE_FOUND`.
+
+### Carbon Locale
+
+Carbon language is set based on the laravel's app locale. By default it is enabled. You may disable changinge `CARBON_LOCALE` value to `false`in `config/extrafeatures.php` file.
 
 
 ### DateScopesTrait
