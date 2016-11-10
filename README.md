@@ -35,7 +35,7 @@ The above line will create a file called `extrafeatures.php` under config folder
 **Functionality**
 
 *   [Redirect when No Page Found](https://github.com/edujugon/LaravelExtraFeatures#redirect-no-page-found)
-*   [Carbon Locale](https://github.com/edujugon/LaravelExtraFeatures#caron-locale)
+*   [Carbon Locale](https://github.com/edujugon/LaravelExtraFeatures#carbon-locale)
 
 **Traits**
 
