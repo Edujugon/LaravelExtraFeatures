@@ -53,7 +53,7 @@ When user tries to load an unknown url, it's redirected to a specific known url.
 
 ### Carbon Locale
 
-Carbon language is set based on the laravel's app locale. By default it is enabled. You may disable changinge `CARBON_LOCALE` value to `false`in `config/extrafeatures.php` file.
+Carbon language is set based on the laravel's app locale. By default it is enabled. You may disable changing `CARBON_LOCALE` value to `false`in `config/extrafeatures.php` file.
 
 
 ### DateScopesTrait
