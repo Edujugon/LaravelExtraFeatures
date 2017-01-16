@@ -41,7 +41,9 @@ The above line will create a file called `extrafeatures.php` under config folder
 
 *   [DateScopesTrait](https://github.com/edujugon/LaravelExtraFeatures#datescopestrait)
    
+**Services**
 
+*   [QueryCreator](https://github.com/edujugon/LaravelExtraFeatures#querycreator
 
 ### Redirect No Page Found
 
@@ -105,4 +107,58 @@ Provide extra features on year, month and day to retrieve data for Laravel Eloqu
      * @return mixed
      */
     public function scopeDay($query,$dateColumn = null,$day = null, $month = null, $year = null)
+```
+
+### QueryCreator
+
+Create DB query dynamically
+
+
+```php
+    /**
+         * Create a query dynamically with passed parameters.
+         *
+         * Params:
+         *  tableName is the table name.
+         *  array is a list of data to be converted to query.
+         * 
+         * @param $tableName
+         * @param array $array
+         * @return mixed
+         */
+        static public function dynamic($tableName, array $array)
+```
+
+#### API list
+
+- [dynamic](https://github.com/edujugon/LaravelExtraFeatures#dynmaic)
+
+
+#####Dynamic
+
+`dynamic` method returns a Illuminate\Database\Query\Builder based on the passed parameters.
+
+
+Paramenters: 
+
+- tableName: name of the table.
+- array: all values to be convert into a query.
+
+
+**Syntax**
+
+```php
+object dynamic($tableName, array $array)
+```
+
+#### Use Cases
+
+```php
+$array = [
+            '<'=>['pvr'=>'pvl'],
+            'like'=>['id_imagen'=>'"%5047%"'],
+            'null'=>['margen_1']
+        ];
+ QueryCreator::dynamic('products',$array)->select('id','id_imagen')->first());
+
 ```
