@@ -1,5 +1,5 @@
 <?php
-namespace Edujugon\LaravelExtraFeatures\Services;
+namespace App\Services;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -8,13 +8,10 @@ class QueryCreator
 {
 
     /**
-     * List of values what don't need to be compared. (whereNull,whereNotNull...)
-     * @var array
-     */
-    private $withoutComparisonValues = ['null','NULL','notNull'];
-
-    /**
      * list of values to be replaced.
+     *
+     * Key is the pattern and the list will be converted to the key value.
+     *
      * @var array
      */
     private $replacements = [
@@ -22,7 +19,9 @@ class QueryCreator
     ];
 
     /**
-     * list of operators based on their list.
+     * list of operators based on a list.
+     *
+     * Key is the pattern and will be replaced as operator for the query statement
      *
      * @var array
      */
@@ -32,87 +31,168 @@ class QueryCreator
     ];
 
     /**
-     * Create a query dynamically with passed parameters.
+     * DB table name
+     * @var
+     */
+    private $table;
+
+    /**
+     * DB Query
+     * @var
+     */
+    private $query;
+
+    /**
+     * Run Query
+     *
+     * @return mixed
+     */
+    public function get()
+    {
+        return $this->query->get();
+    }
+
+
+    /**
+     * Get the object query
+     *
+     * @return mixed
+     */
+    public function query()
+    {
+        return $this->query;
+    }
+
+
+    /**
+     * Create a query dynamically based on passed parameters.
      *
      * Params:
      *  tableName is the table name.
      *  array is a list of data to be converted to query.
-     *
      * @param $tableName
      * @param array $array
      * @return mixed
      */
-    static public function dynamic($tableName, array $array)
+    public function build(array $array)
     {
-        (new static)->tableExist($tableName);
+        $this->walkArray($array);
 
-        $query = DB::table($tableName);
+        return $this;
+    }
 
-        $query = (new static)->queryBuilder($query,$array);
+    /**
+     * Set the table for the query
+     *
+     * @param $name
+     * @return mixed
+     */
+    public static function table($name)
+    {
+        $instance = (new static)->tableExist($name);
 
-        return $query;
+        $instance->table = $name;
+
+        return $instance;
+    }
+
+    /**
+     * It's an alias where you can set table and build methods at once.
+     *
+     * @param $tableName
+     * @param $array
+     * @return mixed
+     */
+    public static function create($tableName, $array){
+        $instance = (new static)->tableExist($tableName);
+
+        $instance->walkArray($array);
+
+        return $instance;
     }
 
     /**
      * Check if the table exists in the schema
+     * If no exists, throw an exception.
      *
      * @param $tableName
+     * @return $this
      * @throws \Exception
      */
     private function tableExist($tableName)
     {
         if(!Schema::hasTable($tableName))
             throw new \Exception('Table not found.');
+
+        $this->query = DB::table($tableName);
+
+        return $this;
     }
 
     /**
-     * Build the query
+     * Walk the array and call setCorrectMethod for each statement.
      *
-     * @param $query
      * @param $array
      * @return mixed
+     * @internal param $query
      */
-    private function queryBuilder($query, $array)
+    private function walkArray($array)
     {
         foreach ($array as $key => $values)
         {
-            $query = $this->setCorrectMethod($query,$key,$values);
+            $this->setCorrectMethod($key,$values);
         }
 
-        return $query;
     }
 
+
     /**
-     * Create the query depending on it need to be compareted or not.
+     * Set the correct method based on the array is associative or not.
      *
-     * @param $query
      * @param $key
      * @param $values
-     * @return mixed
      */
-    private function setCorrectMethod($query, $key, $values)
+    private function setCorrectMethod($key, $values)
     {
-        if(in_array($key,$this->withoutComparisonValues)){
-            foreach ($values as $val)
-            {
-                $operator = $this->getOperator($key);
-                $key = $this->getReplacement($key);
-
-                $query = $query->whereRaw("$val $operator $key");
-                ;
-            }
-        }else{
-            foreach ($values as $first => $second)
-            {
-                $query->whereRaw("$first $key $second");
-            }
-        }
-        return $query;
+        if($this->isAssociative($values)){
+            $this->compareParameters($key,$values);
+        }else
+            $this->singleAssignament($key,$values);
     }
 
+    /**
+     * Create a query comparing the 2 values of the child array.
+     *
+     * @param $key
+     * @param $values
+     */
+    private function compareParameters($key, $values)
+    {
+        foreach ($values as $first => $second)
+        {
+            $this->query = $this->query->whereRaw("$first $key $second");
+        }
+    }
 
     /**
-     * If passed value has a replacement the return that one otherwise return same value.
+     * Create a query with he single value of the child array.
+     *
+     * @param $key
+     * @param $values
+     */
+    private function singleAssignament($key, $values)
+    {
+        foreach ($values as $val)
+        {
+            $operator = $this->getOperator($key);
+            $key = $this->getReplacement($key);
+
+            $this->query = $this->query->whereRaw("$val $operator $key");
+        }
+    }
+
+    /**
+     * If passed value has a replacement then return it, otherwise return same value.
      *
      * @param $needle
      * @return int|string
@@ -147,6 +227,18 @@ class QueryCreator
             }
         }
         return $operator;
+    }
+
+    /**
+     * Confirm if array is associative or not.
+     *
+     * @param array $arr
+     * @return bool
+     */
+    private function isAssociative(array $arr)
+    {
+        if (array() === $arr) return false;
+        return array_keys($arr) !== range(0, count($arr) - 1);
     }
 
 }

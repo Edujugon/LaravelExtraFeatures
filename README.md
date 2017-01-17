@@ -131,24 +131,30 @@ Create DB query dynamically
 
 #### API list
 
-- [dynamic](https://github.com/edujugon/LaravelExtraFeatures#dynmaic)
+- [table](https://github.com/edujugon/LaravelExtraFeatures#table)
+- [build](https://github.com/edujugon/LaravelExtraFeatures#build)
 
 
-#####Dynamic
+#####Table
 
-`dynamic` method returns a Illuminate\Database\Query\Builder based on the passed parameters.
-
-
-Paramenters: 
-
-- tableName: name of the table.
-- array: all values to be convert into a query.
+`table` method sets the table name for the Query.
 
 
 **Syntax**
 
 ```php
-object dynamic($tableName, array $array)
+object table($tableName)
+```
+
+#####Build
+
+`build` method builds the query based on passed array.
+
+
+**Syntax**
+
+```php
+object build(arrray $data)
 ```
 
 #### Use Cases
