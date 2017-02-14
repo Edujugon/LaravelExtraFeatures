@@ -1,5 +1,5 @@
 <?php
-namespace App\Services;
+namespace Edujugon\LaravelExtraFeatures\Services;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;

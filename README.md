@@ -135,7 +135,7 @@ Create DB query dynamically
 - [build](https://github.com/edujugon/LaravelExtraFeatures#build)
 
 
-#####Table
+##### Table
 
 `table` method sets the table name for the Query.
 

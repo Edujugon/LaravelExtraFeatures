@@ -1,10 +1,9 @@
 <?php
-namespace App\Services;
+namespace Edujugon\LaravelExtraFeatures\Services;
 
 
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
 class DiffTables
@@ -29,6 +28,7 @@ class DiffTables
      */
     protected $baseCollection;
 
+
     /**
      * Table to be merged into the baseTable
      * @var string
@@ -42,27 +42,65 @@ class DiffTables
      */
     protected $mergeCollection;
 
+
+    /**
+     * Associative array with base table pivot => merge table pivot
+     * The key is the base table pivot and the value is the merge table pivot
+     *
+     *
+     * @var array
+     */
+    protected $associativePivots = [];
+
+    /**
+     * Associative array with base table columns => merge table columns
+     * The key is the base column and the value is the merge table column
+     *
+     * If empty, it will be search column name matching.
+     *
+     * @var array
+     */
+    protected $associativeColumns = [];
+
     /**
      * Collection of items that are in merge Table but no in base table
      * @var
      */
-    protected $newItems;
+    protected $unMatchedCollection;
+
+    /**
+     * Collection of items that are in merge Table and in base table
+     * @var
+     */
+    protected $matchedCollection;
 
 
     /**
      * stdClass object with the columns as properties.
-     * each property will be an array with old and new values.
+     * each property will be an array with old and new values. (oldValue => newValue)
      *
      * @var
      */
     protected $report;
 
+
     /**
-     * Table Column as a point of comparision for the tables.
+     * Primary Key. this column won't be overwritten except if passed as column
      * @var string
      */
-    protected $pivot='';
+    protected $primaryKey = 'id';
 
+    /**
+     * Amount of rows updated by matched after the merge.
+     *
+     * @var int
+     */
+    protected $rowUpdatedByMatched = 0;
+
+    /**
+     * @var int
+     */
+    protected $rowInserted = 0;
 
     //
     //API METHODS
@@ -80,24 +118,50 @@ class DiffTables
         $instance = (new static());
         $instance->validateTables([$baseTable,$mergeTable]);
 
-        $instance->setTableProperties([$baseTable,$mergeTable]);
+        $instance->setClassTableProperties([$baseTable,$mergeTable]);
 
         return $instance;
     }
 
     /**
-     * Set pivot column.
+     * Set pivots column.
      *
-     * @param $name
+     * @param $basePivot
+     * @param $mergePivot
      * @return $this
      */
-    public function pivot($name)
+    public function pivots($basePivot,$mergePivot)
     {
-        $this->validatePivot($name);
+        return $this->multiPivots([$basePivot => $mergePivot]);
 
-        $this->pivot = $name;
+    }
+
+    /**
+     * Assign multi pivots.
+     * Passed associative array with basePivot => mergePivot
+     *
+     * @param array $pivots
+     * @return $this
+     */
+    public function multiPivots(array $pivots)
+    {
+
+        $this->validateAssociativeColumns($pivots);
+
+        $this->setClassAssociativePivots($pivots);
 
         return $this;
+    }
+
+    /**
+     * Set base and merge table pivots from one single pivot.
+     *
+     * @param $pivot
+     * @return DiffTables
+     */
+    public function pivot($pivot)
+    {
+        return $this->pivots($pivot,$pivot);
     }
 
     /**
@@ -110,13 +174,33 @@ class DiffTables
     public function run(){
 
         $this->loadCollections();
-        $this->findNewElementsBetweenCollections($this->pivot,$this->mergeCollection,$this->baseCollection);
 
-        $this->getReport();
+        $this->loadMatchedCollection();
+        $this->loadUnMatchedCollection();
+
+        $this->initReport();
 
         return $this;
     }
 
+    /**
+     * Load the associative columns of base table and merge table.
+     *
+     * base table column1 => merge table column 10
+     * base table column20 => merge table column 4
+     * ...
+     *
+     * @param array $columns
+     * @return $this
+     */
+    public function columns(array $columns)
+    {
+        $this->associativeColumns = $columns;
+
+        $this->validateAssociativeColumns($columns);
+
+        return $this;
+    }
 
     /**
      * Return the report.
@@ -124,6 +208,16 @@ class DiffTables
      * @return mixed
      */
     public function withReport()
+    {
+        return $this->report;
+    }
+
+    /**
+     * Return the report.
+     *
+     * @return mixed
+     */
+    public function getReport()
     {
         return $this->report;
     }
@@ -147,33 +241,88 @@ class DiffTables
     }
 
     /**
-     * Do the value updates in the base table and insert new values.
+     * Update Base table items with Merge table values.
+     * Also Insert new values from merge table to base table.
      *
-     * @return bool
+     * @return $this
      */
     public function merge(){
 
-        $this->createNewColumnsInTable($this->baseTable,$this->mergeTable);
+        $this->mergeMatched();
+        $this->mergeUnMatched();
 
-        $this->doMerge($this->baseTable,$this->pivot,$this->mergeCollection);
-
-        return true;
+        return $this;
     }
 
     /**
-     * Get elements that are in the merge table but no in the base table.
+     * Insert new values that are in merge table but not in base table.
      *
-     *
-     * @return mixed
+     * @return $this
      */
-    public function getNewItems()
+    public function mergeUnMatched()
     {
-        return $this->newItems;
+        $this->createNewColumnsInBaseTable();
+
+        $this->insertUnMatched();
+
+        return $this;
     }
+
+    /**
+     * Update Base table values with Matched Merge table values.
+     * !Notice it won't update the new items found in merge that are not in base table.
+     *
+     * @return $this
+     */
+    public function mergeMatched()
+    {
+        $this->createNewColumnsInBaseTable();
+
+        $this->updateBaseTable();
+
+        return $this;
+    }
+
+
+    //GETTERS
+
+    public function matched()
+    {
+        return $this->matchedCollection;
+    }
+
+    public function unMatched()
+    {
+        return $this->unMatchedCollection;
+    }
+
+    public function updatedRows()
+    {
+        return $this->rowUpdatedByMatched;
+    }
+
+    public function insertedRows()
+    {
+        return $this->rowInserted;
+    }
+
+    //
 
     //
     //PRIVATE METHODS
     //
+
+
+    /**
+     * Set the class Associative properties.
+     *
+     * @param array $pivots
+     */
+    private function setClassAssociativePivots(array $pivots)
+    {
+        $this->associativePivots = $pivots;
+    }
+
 
     /**
      * Return column's name and amount of changes.
@@ -192,112 +341,166 @@ class DiffTables
     /**
      * Create columns in a table if columns don't exist
      *
-     * @param $tableName
-     * @param $mergeTableName
      */
-    private function createNewColumnsInTable($tableName, $mergeTableName)
+    private function createNewColumnsInBaseTable()
     {
-        $columns = Schema::getColumnListing($mergeTableName);
 
-        Schema::table($tableName, function (Blueprint $table) use ($columns) {
+        Schema::table($this->baseTable, function (Blueprint $table) {
 
-            foreach($columns as $key){
-                if(!Schema::hasColumn($table->getTable(),$key)) {
-                    $table->text($key)->nullable();
+            //If no associative columns, the use same column name as merge column.
+            if(empty($this->associativeColumns))
+            {
+                $columns = Schema::getColumnListing($this->mergeTable);
+
+                foreach($columns as $key){
+                    if(!Schema::hasColumn($table->getTable(),$key)) {
+                        $table->text($key)->nullable();
+                    }
+                }
+                //Otherwise create only the table columns in baseTable which appears in array.
+            }else{
+                foreach ($this->associativeColumns as $baseColumn => $mergeColumn)
+                {
+                    if(!Schema::hasColumn($table->getTable(),$baseColumn)) {
+                        $table->text($baseColumn)->nullable();
+                    }
                 }
             }
+
         });
     }
 
-    /**
-     * Insert and Update data to a table
-     *
-     * @param $tableName
-     * @param $pivot
-     * @param $collection
-     */
-    private function doMerge($tableName, $pivot, $collection)
-    {
-        $this->doMergeByPivotValue($tableName, $pivot, $collection);
 
-        $this->doMergeForNewElements($tableName, $pivot);
-    }
 
     /**
-     * Update values based on the pivot table.
+     * Update values based on the matched collection.
      *
-     * @param $tableName
-     * @param $pivot
-     * @param $collection
      */
-    private function doMergeByPivotValue($tableName, $pivot, $collection)
+    private function updateBaseTable()
     {
-        $equalItems = $this->removedNewItems($pivot, $collection, $this->newItems);
+        foreach ($this->mergeCollection as $key => $item)
+        {
+            $query = DB::table($this->baseTable);
 
-        $equalItems->each(function ($item) use ($tableName, $pivot, $collection) {
+            foreach ($this->associativePivots as $basePivot => $mergePivot)
+            {
+                $query = $query->whereIn($basePivot,[$item->$mergePivot]);
+            }
 
-            //Unset id property because it can create Integrity constraint violation: Duplicate ID
-            if ($pivot != 'id')
+            if(!in_array($this->primaryKey,$this->associativeColumns) && !in_array($this->primaryKey,$this->associativePivots))
                 unset($item->id);
 
-            DB::table($tableName)->where($pivot, $item->$pivot)->update(get_object_vars($item));
+            if(!empty($this->associativeColumns)) {
 
-        });
+                $newItem = new \stdClass();
+
+                foreach ($this->associativeColumns as $baseColumn => $mergeColumn) {
+                    $newItem->$baseColumn = $item->$mergeColumn;
+                }
+
+                $item = $newItem;
+            }
+
+
+            $this->rowUpdatedByMatched += $query->update(get_object_vars($item));
+        }
+
     }
 
     /**
      * Insert new elements into base table.
      *
-     * @param $tableName
-     * @param $pivot
      */
-    private function doMergeForNewElements($tableName, $pivot)
+    private function insertUnMatched()
     {
-        $newElements = $this->newItems->map(function ($item) use ($pivot) {
+        $newElements = $this->unMatchedCollection->map(function ($item) {
 
-            //Unset id property because it can create Integrity constraint violation: Duplicate ID
-            if ($pivot != 'id')
+            //Unset primary key property because it can create Integrity constraint violation: Duplicate ID
+            if(!in_array($this->primaryKey,$this->associativeColumns) && !in_array($this->primaryKey,$this->associativePivots))
                 unset($item->id);
+
+            if(!empty($this->associativeColumns))
+            {
+                $newItem = new \stdClass();
+                foreach ($this->associativeColumns as $baseColumn => $mergeColumn)
+                {
+                    $newItem->$baseColumn = $item->$mergeColumn;
+                }
+                foreach ($this->associativePivots as $baseColumn => $mergeColumn)
+                {
+                    $newItem->$baseColumn = $item->$mergeColumn;
+                }
+
+                $item = $newItem;
+            }
+
 
             return get_object_vars($item);
 
         })->toArray();
 
         if (!empty($newElements))
-            DB::table($tableName)->insert($newElements);
+            $this->rowInserted = DB::table($this->baseTable)->insert($newElements);
     }
 
     /**
      * Start the reporting process
      */
-    private function getReport()
+    private function initReport()
     {
-        $equalItems = $this->removedNewItems($this->pivot,$this->mergeCollection,$this->newItems);
+        $this->report = new \stdClass();
 
-        $this->searchDiffs($equalItems);
-
+        $this->searchDiffs();
     }
+
     /**
      * Start looking for differences
      *
-     * @param $mergeCollection
      */
-    private function searchDiffs($mergeCollection)
+    private function searchDiffs()
     {
-        $mergeCollection->each(function ($newElement) {
+        $this->matchedCollection->each(function ($item) {
 
-            //Unset id property because it can create Integrity constraint violation: Duplicate ID
-            if($this->pivot != 'id'){
+            $newElement = $this->findMeIn($this->mergeCollection,$item);
+
+            //Unset primary key property if it's not in associative pivots because it can create Integrity constraint violation: Duplicate ID
+            if(!in_array($this->primaryKey,$this->associativeColumns) && !in_array($this->primaryKey,$this->associativePivots))
                 unset($newElement->id);
-            }
-
-            $pivot = $this->pivot;
-            $oldElement = $this->baseCollection->where($pivot,$newElement->$pivot)->first();
 
             //If found element
-            if($oldElement)
-                $this->fillReport($newElement,$oldElement);
+            if($newElement)
+                $this->fillReport($newElement,$item);
         });
+    }
+
+    /**
+     * get an item from a passed collection where match with the passed item.
+     * All based on the associative pivot list.
+     * @param $collection
+     * @param $search
+     * @return bool
+     */
+    private function findMeIn($collection, $search)
+    {
+        foreach ($collection as $key => $item)
+        {
+            $found = true;
+            foreach ($this->associativePivots as $basePivot => $mergePivot)
+            {
+                if($search->$basePivot != $item->$mergePivot)
+                {
+                    $found = false;
+                    continue 2;
+                }
+            }
+
+            if($found){
+                return $item;
+            }
+
+        }
+
+        return false;
     }
 
     /**
@@ -309,61 +512,122 @@ class DiffTables
     private function fillReport($newElement,$oldElement)
     {
 
-        $this->report = new \stdClass();
-
         if($newElement !== $oldElement){
 
-            foreach (get_object_vars($newElement) as $key => $newValue){
-
-                if(!property_exists($oldElement,$key)){
-
-                    $this->report->$key[] = ['Null' => $newValue];
-
-                    continue;
-                }
-
-                if($newValue != $oldElement->$key){
-
-                    $this->report->$key[] = [$oldElement->$key => $newValue];
-
-                }
-
-            };
+            // It will search by column name matching
+            if(empty($this->associativeColumns))
+                $this->allColumns($newElement,$oldElement);
+            else
+                $this->byAssociativeColumns($newElement,$oldElement);
         }
     }
 
     /**
-     * Pull items that are new for the other collection.
+     * Get value from base table column and value from merge table column
+     * Based on the associative array with columns.
      *
-     * @param $pivot
-     * @param $collection
-     * @param $newCollection
-     * @return mixed
+     * @param $newElement
+     * @param $oldElement
      */
-    private function removedNewItems($pivot, $collection, $newCollection)
+    private function byAssociativeColumns($newElement, $oldElement)
     {
 
-        if(!$newCollection->isEmpty())
-            $collection = DB::table($this->mergeTable)->whereNotIn($pivot,$newCollection->pluck($pivot)->toArray())->get();
+        foreach ($this->associativeColumns as $baseColumn => $mergeColumn){
 
-        return $collection;
+            if(!property_exists($oldElement,$baseColumn)){
+
+
+                $this->report->$baseColumn[] = ['Column does not exist' => $newElement->$mergeColumn];
+
+                continue;
+            }
+
+            if($newElement->$mergeColumn != $oldElement->$baseColumn){
+
+                //Check this because it overwrite the before value. so it store only the last one.
+                $this->report->$baseColumn[] = [$oldElement->$baseColumn => $newElement->$mergeColumn];
+            }
+
+        }
     }
 
     /**
-     * Find new elements between 2 collections.
+     * Based on column name matching
      *
-     * @param $pivot
-     * @param $collection1
-     * @param $collection2
+     * @param $newElement
+     * @param $oldElement
      */
-    private function findNewElementsBetweenCollections($pivot, $collection1, $collection2)
+    private function allColumns($newElement, $oldElement)
     {
-        //Array of new items based on pivot table
-        $newItems = $collection1->pluck($pivot)->diff($collection2->pluck($pivot));
 
-        //Get real objects and assign to newItems property
-        $this->newItems = DB::table($this->mergeTable)->whereIn($pivot,$newItems)->get();
+        foreach (get_object_vars($newElement) as $key => $newValue){
 
+            if(!property_exists($oldElement,$key)){
+
+                $this->report->$key[] = ['Column does not exist' => $newValue];
+
+                continue;
+            }
+
+            if($newValue != $oldElement->$key){
+
+                $this->report->$key[] = [$oldElement->$key => $newValue];
+
+            }
+
+        }
+    }
+
+    /**
+     * create unmatched collection based on pivots
+     *
+     */
+    private function loadUnMatchedCollection()
+    {
+        $this->unMatchedCollection = collect();
+
+        foreach ($this->mergeCollection as $key => $item)
+        {
+
+            foreach ($this->associativePivots as $basePivot => $mergePivot)
+            {
+                if(!$this->baseCollection->whereIn($basePivot,$item->$mergePivot)->first())
+                {
+                    $this->unMatchedCollection->push($item);
+                    continue 2;
+                }
+            }
+
+
+        }
+
+    }
+
+    /**
+     * Create matched collection based on pivots.
+     */
+    private function loadMatchedCollection()
+    {
+        $this->matchedCollection = collect();
+
+        foreach ($this->baseCollection as $key => $item)
+        {
+
+            $found = true;
+            foreach ($this->associativePivots as $basePivot => $mergePivot)
+            {
+                if(!$this->mergeCollection->whereIn($mergePivot,$item->$basePivot)->first())
+                {
+                    $found = false;
+                    continue 2;
+                }
+            }
+
+            if($found){
+                $this->matchedCollection->push($item);
+            }
+
+        }
     }
 
     /**
@@ -371,22 +635,26 @@ class DiffTables
      */
     private function loadCollections()
     {
-        $this->loadCollection($this->mergeTable);
-        $this->loadCollectionFromAnother($this->baseTable,$this->pivot,$this->mergeCollection);
+        $this->mergeCollection = $this->loadCollection($this->mergeTable);
+        $this->baseCollection = $this->joinWhereIn(DB::table($this->baseTable))->get();
+
     }
 
-    /**
-     * Load a collection based on another collection.
-     * if some elements aren't in both then they aren't pushed.
-     *
-     * @param $tableName
-     * @param $pivot
-     * @param $mergeCollection
-     */
-    private function loadCollectionFromAnother($tableName, $pivot, $mergeCollection)
-    {
 
-        $this->baseCollection = DB::table($tableName)->whereIn($pivot,$mergeCollection->pluck($pivot)->toArray())->get();
+    /**
+     * Add whereIn closures to the DB Query based on associative pivots.
+     *
+     * @param $query
+     * @return mixed
+     */
+    private function joinWhereIn($query)
+    {
+        foreach ($this->associativePivots as $basePivot => $mergePivot)
+        {
+            $query = $query->whereIn($basePivot,$this->mergeCollection->pluck($mergePivot)->toArray());
+        }
+
+        return $query;
     }
 
     /**
@@ -397,13 +665,13 @@ class DiffTables
      */
     private function loadCollection($tableName)
     {
-        $this->mergeCollection = DB::table($tableName)->get();
+        return  DB::table($tableName)->get();
     }
 
     /**
      * @param $array
      */
-    private function setTableProperties($array)
+    private function setClassTableProperties($array)
     {
         $this->tables = $array;
 
@@ -426,30 +694,30 @@ class DiffTables
     }
 
     /**
-     * Validate passed name
-     *
-     * @param $name
+     * @param $columns
      */
-    private function validatePivot($name)
+    private function validateAssociativeColumns($columns)
     {
-        $this->existsInTables($name);
+        foreach ($columns as $baseColumn => $mergeColumn)
+        {
+            //$this->existsInTable($this->baseTable,$baseColumn);
+            $this->existsInTable($this->mergeTable,$mergeColumn);
+        }
+
     }
 
     /**
      * Confirm pivot name exists in tables columns
      *
+     * @param $table
      * @param $pivot
      * @return bool
      * @throws \Exception
      */
-    private function existsInTables($pivot)
+    private function existsInTable($table,$pivot)
     {
-        foreach ($this->tables as $table)
-        {
-            if(!Schema::hasColumn($table,$pivot))
-                throw new \Exception('Pivot Column not Found.');
-
-        }
+        if(!Schema::hasColumn($table,$pivot))
+            throw new \Exception('Column not Found.');
 
         return true;
 
